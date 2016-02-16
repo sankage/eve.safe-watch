@@ -1,3 +1,38 @@
+function get(url) {
+  // Return a new promise.
+  return new Promise(function(resolve, reject) {
+    // Do the usual XHR stuff
+    var req = new XMLHttpRequest();
+    req.open('GET', url);
+
+    req.onload = function() {
+      // This is called even on 404 etc
+      // so check the status
+      if (req.status == 200) {
+        // Resolve the promise with the response text
+        resolve(req.response);
+      }
+      else {
+        // Otherwise reject with the status text
+        // which will hopefully be a meaningful error
+        reject(Error(req.statusText));
+      }
+    };
+
+    // Handle network errors
+    req.onerror = function() {
+      reject(Error("Network Error"));
+    };
+
+    // Make the request
+    req.send();
+  });
+}
+
+function getJSON(url) {
+  return get(url).then(JSON.parse);
+}
+
 var pairwise = function(list) {
   if (list.length < 2) {
     return [];
@@ -28,59 +63,46 @@ var calculate_midpoint = function(p1, p2) {
   };
 };
 
-var request_planet = function(url) {
-  return $.ajax({
-    url: url,
-    dataType: 'json'
-  })
-};
-
 var safe_points_for_system = function(system_id) {
   return new Promise(function(resolve, reject) {
-    $.ajax({
-      url: 'https://public-crest.eveonline.com/solarsystems/'+system_id+'/',
-      dataType: 'json'
-    }).done(function(system) {
-      var planet_hrefs = [];
-      $.each(system.planets, function(i, planet) {
-        planet_hrefs.push(planet.href);
+    url = 'https://public-crest.eveonline.com/solarsystems/'+system_id+'/'
+    getJSON(url).then(function(system) {
+      return Promise.all(
+        system.planets.map(function(planet) {
+          return planet.href;
+        }).map(getJSON)
+      );
+    }).then(function(planets) {
+      planets.push({
+        position: { x: 0, y: 0, z: 0 },
+        name: 'Sun'
       });
-      $.when.apply($, planet_hrefs.map(request_planet)).done(function() {
-        var points = [{
-          position: { x: 0, y: 0, z: 0 },
-          name: 'Sun'
-        }];
-        for (var i = 0, j = arguments.length; i < j; i++) {
-          planet = arguments[i][0];
-          points.push(planet);
+      var pairs = pairwise(planets);
+      var midpoints = pairs.map(function(pair) {
+        return {
+          name: pair[0].name + ' to ' + pair[1].name,
+          midpoint: calculate_midpoint(pair[0].position, pair[1].position),
+          distance: calculate_distance(pair[0].position, pair[1].position)
         }
-
-        var pairs = pairwise(points);
-        var midpoints = pairs.map(function(pair) {
+      });
+      return midpoints.map(function(mid) {
+        return planets.map(function(planet) {
+          var midpoint = calculate_midpoint(mid.midpoint, planet.position);
+          var distances = calculate_distances(midpoint, planets);
           return {
-            name: pair[0].name + ' to ' + pair[1].name,
-            midpoint: calculate_midpoint(pair[0].position, pair[1].position),
-            distance: calculate_distance(pair[0].position, pair[1].position)
+            name: '(' + mid.name + ') to ' + planet.name,
+            midpoint: midpoint,
+            distances: distances,
+            safe: distances.every(function(d) { return d > 2147483647000 })
           }
         });
-        final_midpoints = midpoints.map(function(mid) {
-          return points.map(function(point) {
-            var midpoint = calculate_midpoint(mid.midpoint, point.position);
-            var distances = calculate_distances(midpoint, points);
-            return {
-              name: '(' + mid.name + ') to ' + point.name,
-              midpoint: midpoint,
-              distances: distances,
-              safe: distances.every(function(d) { return d > 2147483647000 })
-            }
-          });
-        });
-        final_midpoints = Array.prototype.concat.apply([], final_midpoints);
-        filtered_midpoints = final_midpoints.filter(function(m) {
-          return m.safe;
-        });
-        resolve(filtered_midpoints);
       });
+    }).then(function(midpoints) {
+      final_midpoints = Array.prototype.concat.apply([], midpoints);
+      filtered_midpoints = final_midpoints.filter(function(m) {
+        return m.safe;
+      });
+      resolve(filtered_midpoints);
     });
   });
 };
