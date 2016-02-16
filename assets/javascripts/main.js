@@ -67,9 +67,12 @@ var systems_promise = new Promise(function(resolve, reject) {
   api_endpoint = 'https://public-crest.eveonline.com/solarsystems/';
   getJSON(api_endpoint).then(function(data) {
     var systems = {};
+    var names = [];
     data.items.forEach(function(system) {
       systems[system.name] = system.href;
+      names.push(system.name);
     });
+    systems.order = names.sort();
     resolve(systems);
   });
 });
@@ -77,9 +80,9 @@ var systems_promise = new Promise(function(resolve, reject) {
 systems_promise.then(function(systems) {
   var element = document.getElementById('system_selector');
   var options = ['<option>Please choose system</option>'];
-  for (var name in systems) {
+  systems.order.forEach(function(name) {
     options.push("<option value='" + name + "'>" + name + "</option>");
-  }
+  });
   element.innerHTML = options.join("\n");
   element.addEventListener('change', function() {
     var name = this.value;
@@ -159,8 +162,6 @@ var safe_points_for_system = function(system_name) {
   });
 };
 
-//
-
 var draw, AU, graph;
 
 AU = 149597870700;
@@ -198,5 +199,3 @@ draw = function(data, max) {
   var container = document.getElementById('system');
   graph = new vis.Graph3d(container, data, options);
 };
-
-
