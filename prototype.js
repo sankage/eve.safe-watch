@@ -63,10 +63,23 @@ var calculate_midpoint = function(p1, p2) {
   };
 };
 
-var safe_points_for_system = function(system_id) {
+
+var systems_promise = new Promise(function(resolve, reject) {
+  api_endpoint = 'https://public-crest.eveonline.com/solarsystems/';
+  getJSON(api_endpoint).then(function(data) {
+    var systems = {};
+    data.items.forEach(function(system) {
+      systems[system.name] = system.href;
+    });
+    resolve(systems);
+  });
+});
+
+var safe_points_for_system = function(system_name) {
   return new Promise(function(resolve, reject) {
-    url = 'https://public-crest.eveonline.com/solarsystems/'+system_id+'/'
-    getJSON(url).then(function(system) {
+    systems_promise.then(function(systems) {
+      return getJSON(systems[system_name]);
+    }).then(function(system) {
       return Promise.all(
         system.planets.map(function(planet) {
           return planet.href;
@@ -85,26 +98,32 @@ var safe_points_for_system = function(system_id) {
           distance: calculate_distance(pair[0].position, pair[1].position)
         }
       });
-      return midpoints.map(function(mid) {
-        return planets.map(function(planet) {
-          var midpoint = calculate_midpoint(mid.midpoint, planet.position);
-          var distances = calculate_distances(midpoint, planets);
-          return {
-            name: '(' + mid.name + ') to ' + planet.name,
-            midpoint: midpoint,
-            distances: distances,
-            safe: distances.every(function(d) { return d > 2147483647000 })
-          }
-        });
-      });
-    }).then(function(midpoints) {
-      final_midpoints = Array.prototype.concat.apply([], midpoints);
-      filtered_midpoints = final_midpoints.filter(function(m) {
+      return {
+        planets: planets,
+        midpoints: midpoints.map(function(mid) {
+          return planets.map(function(planet) {
+            var midpoint = calculate_midpoint(mid.midpoint, planet.position);
+            var distances = calculate_distances(midpoint, planets);
+            return {
+              name: '(' + mid.name + ') to ' + planet.name,
+              midpoint: midpoint,
+              distances: distances,
+              safe: distances.every(function(d) { return d > 2147483647000 })
+            }
+          });
+        })
+      };
+    }).then(function(data) {
+      final_midpoints = Array.prototype.concat.apply([], data.midpoints);
+      data.midpoints = final_midpoints.filter(function(m) {
         return m.safe;
       });
-      resolve(filtered_midpoints);
+      resolve(data);
     });
   });
 };
 
-// safe_points_for_system('31000005').then(function(data) { console.log(data); });
+// safe_points_for_system('Thera').then(function(data) {
+//   console.info('Planets'); console.log(data.planets);
+//   console.info('Safe Points'); console.log(data.midpoints);
+// });
