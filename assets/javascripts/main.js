@@ -63,7 +63,6 @@ var calculate_midpoint = function(p1, p2) {
   };
 };
 
-
 var systems_promise = new Promise(function(resolve, reject) {
   api_endpoint = 'https://public-crest.eveonline.com/solarsystems/';
   getJSON(api_endpoint).then(function(data) {
@@ -72,6 +71,43 @@ var systems_promise = new Promise(function(resolve, reject) {
       systems[system.name] = system.href;
     });
     resolve(systems);
+  });
+});
+
+systems_promise.then(function(systems) {
+  var element = document.getElementById('system_selector');
+  var options = ['<option>Please choose system</option>'];
+  for (var name in systems) {
+    options.push("<option value='" + name + "'>" + name + "</option>");
+  }
+  element.innerHTML = options.join("\n");
+  element.addEventListener('change', function() {
+    var name = this.value;
+    safe_points_for_system(name).then(function(safe_watch) {
+      console.info('Planets'); console.log(safe_watch.planets);
+      console.info('Safe Points'); console.log(safe_watch.midpoints);
+      var data = new vis.DataSet();
+      var numbers = [];
+      safe_watch.planets.forEach(function(planet) {
+        var point = planet.position;
+        point.style = 1;
+        var temp = point.y;
+        point.y = point.z;
+        point.z = temp;
+        data.add(point);
+        numbers.push(Math.abs(point.x), Math.abs(point.y), Math.abs(point.z));
+      });
+      safe_watch.midpoints.forEach(function(midpoint) {
+        var point = midpoint.midpoint;
+        point.style = 2;
+        var temp = point.y;
+        point.y = point.z;
+        point.z = temp;
+        data.add(point);
+      });
+      var max = Math.max.apply(null, numbers);
+      draw(data, max);
+    });
   });
 });
 
@@ -123,7 +159,44 @@ var safe_points_for_system = function(system_name) {
   });
 };
 
-// safe_points_for_system('Thera').then(function(data) {
-//   console.info('Planets'); console.log(data.planets);
-//   console.info('Safe Points'); console.log(data.midpoints);
-// });
+//
+
+var draw, AU, graph;
+
+AU = 149597870700;
+
+draw = function(data, max) {
+  var options = {
+    width: '100%',
+    height: '100%',
+    style: 'dot-color',
+    showPerspective: false,
+    showGrid: true,
+    keepAspectRatio: false,
+    verticalRatio: 1.0,
+    tooltip: true,
+    dotSizeRatio: 0.005,
+    xValueLabel: function(x) { return Math.round(x / AU) + ' AU'; },
+    yValueLabel: function(y) { return Math.round(y / AU) + ' AU'; },
+    zValueLabel: function(z) { return Math.round(z / AU) + ' AU'; },
+    xMin: -max,
+    xMax: max,
+    xStep: 5 * AU,
+    yMin: -max,
+    yMax: max,
+    yStep: 5 * AU,
+    zMin: -max,
+    zMax: max,
+    zStep: 5 * AU,
+    legendLabel: "Blue: sun and planets; Red: safe spots",
+    cameraPosition: {
+      horizontal: 0,
+      vertical: 0.5 * Math.PI,
+      distance: 2.2
+    }
+  };
+  var container = document.getElementById('system');
+  graph = new vis.Graph3d(container, data, options);
+};
+
+

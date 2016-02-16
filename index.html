@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Safe Watch</title>
+    <link rel="stylesheet" href="assets/stylesheets/main.css">
+    <script src="assets/javascripts/vendor/vis.min.js"></script>
+  </head>
+  <body>
+    <div class="info">
+      <h1>Safe Watch</h1>
+      <select id="system_selector">
+        <option disabled>...Loading...</option>
+      </select>
+
+      <p>Select a system above to see all the safe spots in that system. A safe
+      spot is calculated by looking at the midpoint between 2 celestials
+      (planets and sun only atm) and calculating the midpoint between those
+      midpoints and another celestial. Those results are then filtered down to
+      only show safe spots that are greater than 14.3 AU range of DScan.</p>
+
+    </div>
+    <div id="system"></div>
+    <script src="assets/javascripts/main.js"></script>
+  </body>
+</html>
