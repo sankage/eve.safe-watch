@@ -89,8 +89,6 @@ systems_promise.then(function(systems) {
   element.addEventListener('change', function() {
     var name = this.value;
     safe_points_for_system(name).then(function(safe_watch) {
-      console.info('Planets'); console.log(safe_watch.planets);
-      console.info('Safe Points'); console.log(safe_watch.midpoints);
       var data = new vis.DataSet();
       var numbers = [];
       safe_watch.planets.forEach(function(planet) {
@@ -112,13 +110,15 @@ systems_promise.then(function(systems) {
       });
       var max = Math.max.apply(null, numbers);
       draw(data, max);
-      history.pushState(null, null, name);
+      window.location.hash = '#' + name
     });
   });
-  name = window.location.pathname.split('/')[2];
+  name = window.location.hash.substr(1);
   if (name.length) {
-    element.value = name
-    element.dispatchEvent('change');
+    element.value = name;
+    var evt = document.createEvent("HTMLEvents");
+    evt.initEvent("change", false, true);
+    element.dispatchEvent(evt);
   }
 });
 
@@ -202,7 +202,7 @@ draw = function(data, max) {
       distance: 2.2
     }
   };
-  vis.Graph3d.prototype._redrawLegend = null;
+  vis.Graph3d.prototype._redrawLegend = function(){};
   var container = document.getElementById('system');
   graph = new vis.Graph3d(container, data, options);
 };
