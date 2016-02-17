@@ -63,6 +63,8 @@ var calculate_midpoint = function(p1, p2) {
   };
 };
 
+var AU = 149597870700;
+
 var systems_promise = new Promise(function(resolve, reject) {
   api_endpoint = 'https://public-crest.eveonline.com/solarsystems/';
   getJSON(api_endpoint).then(function(data) {
@@ -162,9 +164,7 @@ var safe_points_for_system = function(system_name) {
   });
 };
 
-var draw, AU, graph;
-
-AU = 149597870700;
+var draw, graph;
 
 draw = function(data, max) {
   var options = {
@@ -196,6 +196,7 @@ draw = function(data, max) {
       distance: 2.2
     }
   };
+  vis.Graph3d.prototype._redrawLegend = null;
   var container = document.getElementById('system');
   graph = new vis.Graph3d(container, data, options);
 };
