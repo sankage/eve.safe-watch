@@ -91,12 +91,14 @@ systems_promise.then(function(systems) {
     safe_points_for_system(name).then(function(safe_watch) {
       var data = new vis.DataSet();
       var numbers = [];
+      var labels = {};
       safe_watch.planets.forEach(function(planet) {
         var point = planet.position;
         point.style = 1;
         var temp = point.y;
         point.y = point.z;
         point.z = temp;
+        labels[point.x + '|' + point.y + '|' + point.z] = planet.name;
         data.add(point);
         numbers.push(Math.abs(point.x), Math.abs(point.y), Math.abs(point.z));
       });
@@ -106,10 +108,11 @@ systems_promise.then(function(systems) {
         var temp = point.y;
         point.y = point.z;
         point.z = temp;
+        labels[point.x + '|' + point.y + '|' + point.z] = midpoint.name;
         data.add(point);
       });
       var max = Math.max.apply(null, numbers);
-      draw(data, max);
+      draw(data, max, labels);
       window.location.hash = '#' + name
     });
   });
@@ -172,7 +175,7 @@ var safe_points_for_system = function(system_name) {
 
 var draw, graph;
 
-draw = function(data, max) {
+draw = function(data, max, labels) {
   var options = {
     width: '100%',
     height: '100%',
@@ -181,7 +184,9 @@ draw = function(data, max) {
     showGrid: true,
     keepAspectRatio: false,
     verticalRatio: 1.0,
-    tooltip: true,
+    tooltip: function(point) {
+      return labels[point.x + '|' + point.y + '|' + point.z];
+    },
     dotSizeRatio: 0.005,
     xValueLabel: function(x) { return Math.round(x / AU) + ' AU'; },
     yValueLabel: function(y) { return Math.round(y / AU) + ' AU'; },
