@@ -112,8 +112,14 @@ systems_promise.then(function(systems) {
       });
       var max = Math.max.apply(null, numbers);
       draw(data, max);
+      history.pushState(null, null, name);
     });
   });
+  name = window.location.pathname.split('/')[2];
+  if (name.length) {
+    element.value = name
+    element.dispatchEvent('change');
+  }
 });
 
 var safe_points_for_system = function(system_name) {
