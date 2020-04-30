@@ -72,7 +72,8 @@ var systems_promise = new Promise(function(resolve, reject) {
   }).then(data => {
     var systems = {};
     var names = [];
-    data.forEach(function(system) {
+    for (let i = 0, j = data.length; i < j; i++) { 
+      const system = data[i]; 
       if (!system.name) continue;
       systems[system.name] = system;
       names.push(system.name);
