@@ -77,7 +77,7 @@ var systems_promise = new Promise(function(resolve, reject) {
       if (!system.name) continue;
       systems[system.name] = system;
       names.push(system.name);
-    });
+    };
     systems.order = names.sort();
     resolve(systems);
   });
