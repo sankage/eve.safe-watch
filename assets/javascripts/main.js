@@ -68,15 +68,16 @@ var AU = 149597870700;
 var systems_promise = new Promise(function(resolve, reject) {
   api_endpoint = 'https://esi.evetech.net/latest/universe/systems/';
   getJSON(api_endpoint).then(function(data) {
-    return Promise.all(data.map(id => getJSON(`https://esi.evetech.net/latest/universe/systems/${id}`).catch(() => {}));
+    return Promise.all(data.map(id => getJSON(`https://esi.evetech.net/latest/universe/systems/${id}`).catch(() => false)));
   }).then(data => {
     var systems = {};
     var names = [];
-    data.forEach(function(system) {
-      if (!system.name) continue;
+    for (let i = 0, j = data.length; i < j; i++) { 
+      const system = data[i]; 
+      if (!system) continue;
       systems[system.name] = system;
       names.push(system.name);
-    });
+    };
     systems.order = names.sort();
     resolve(systems);
   });
@@ -131,11 +132,11 @@ systems_promise.then(function(systems) {
 var safe_points_for_system = function(system_name) {
   return new Promise(function(resolve, reject) {
     systems_promise.then(function(systems) {
-      return getJSON(systems[system_name]);
+      return systems[system_name];
     }).then(function(system) {
       return Promise.all(
         system.planets.map(function(planet) {
-          return planet.href;
+          return `https://esi.evetech.net/latest/universe/planets/${planet.planet_id}`;
         }).map(getJSON)
       );
     }).then(function(planets) {
