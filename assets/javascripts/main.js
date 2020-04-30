@@ -68,13 +68,13 @@ var AU = 149597870700;
 var systems_promise = new Promise(function(resolve, reject) {
   api_endpoint = 'https://esi.evetech.net/latest/universe/systems/';
   getJSON(api_endpoint).then(function(data) {
-    return Promise.all(data.map(id => getJSON(`https://esi.evetech.net/latest/universe/systems/${id}`).catch(() => {})));
+    return Promise.all(data.map(id => getJSON(`https://esi.evetech.net/latest/universe/systems/${id}`).catch(() => false)));
   }).then(data => {
     var systems = {};
     var names = [];
     for (let i = 0, j = data.length; i < j; i++) { 
       const system = data[i]; 
-      if (!system.name) continue;
+      if (!system) continue;
       systems[system.name] = system;
       names.push(system.name);
     };
