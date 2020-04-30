@@ -132,11 +132,11 @@ systems_promise.then(function(systems) {
 var safe_points_for_system = function(system_name) {
   return new Promise(function(resolve, reject) {
     systems_promise.then(function(systems) {
-      return getJSON(systems[system_name]);
+      return systems[system_name];
     }).then(function(system) {
       return Promise.all(
         system.planets.map(function(planet) {
-          return planet.href;
+          return `https://esi.evetech.net/latest/universe/planets/${planet.planet_id}`;
         }).map(getJSON)
       );
     }).then(function(planets) {
